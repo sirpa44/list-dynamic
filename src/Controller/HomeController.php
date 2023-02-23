@@ -6,8 +6,10 @@ use App\Entity\City;
 use App\Entity\Country;
 use App\Repository\CityRepository;
 use App\Repository\CountryRepository;
+use DateTime;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\HttpFoundation\Request;
@@ -50,6 +52,7 @@ class HomeController extends AbstractController
                     new Length(['min' => 5]),
                 ]
             ])
+            ->add('availableAt', DateTimeType::class)
             ->getForm()
         ;
 
