@@ -6,13 +6,13 @@ use App\Entity\City;
 use App\Entity\Country;
 use App\Repository\CityRepository;
 use App\Repository\CountryRepository;
-use DateTimeImmutable;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,8 +23,9 @@ class HomeController extends AbstractController
     #[Route('/', name: 'app_home')]
     public function index(Request $request): Response
     {
-        $form = $this->createFormBuilder(['availableAt' => new DateTimeImmutable('+5 dsys')])
+        $form = $this->createFormBuilder()
             ->add('name', TextType::class)
+            ->add('age', IntegerType::class)
             ->add('price', NumberType::class, [
                 // 'constraints' => new NotBlank(['message' => 'please enter your name.']),
             ])
@@ -53,13 +54,19 @@ class HomeController extends AbstractController
                     // new Length(['min' => 5]),
                 // ]
             ])
-            ->add('availableAt', DateTimeType::class)
-            ->addEventListener(FormEvents::PRE_SET_DATA, function () {
-                dump('test');
+            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+                $age = $event->getData()['age'] ?? null;
+                // dd($age);
+
+                if ($age !== null && $age < 18) {
+                    // dd('ici');
+                    $event->getForm()->add('motherName', TextType::class);
+                }
+
             })
-            ->addEventListener(FormEvents::POST_SET_DATA, function () {
-                dd('test1');
-            })
+            // ->addEventListener(FormEvents::POST_SET_DATA, function () {
+            //     dd('test1');
+            // })
             ->getForm()
         ;
 
