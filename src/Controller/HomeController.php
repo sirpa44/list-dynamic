@@ -21,9 +21,9 @@ use Symfony\Component\Routing\Annotation\Route;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(Request $request): Response
+    public function index(Request $request, CountryRepository $countryRepository): Response
     {
-        $form = $this->createFormBuilder()
+        $form = $this->createFormBuilder(['country' => $countryRepository->find(1)])
             ->add('name', TextType::class)
             ->add('age', IntegerType::class)
             ->add('price', NumberType::class, [
@@ -38,35 +38,42 @@ class HomeController extends AbstractController
                     return $countryRepository->createQueryBuilder('c')->orderBy('c.name', 'ASC');
                 }
             ])
-            ->add('city', EntityType::class, [
-                // 'constraints' => new NotBlank(['message' => 'please choose a city.']),
-                'placeholder' => 'Choose a city',
-                // 'disabled' => true,
-                'class' => City::class,
-                'choice_label' => 'name',
-                'query_builder' => function(CityRepository $countryRepository) {
-                    return $countryRepository->createQueryBuilder('c')->orderBy('c.name', 'ASC');
+            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+                if (null !== $event->getData()['country']) {
+                    $countryId = $event->getData()['country'];
+                    $event->getForm()->add('city', EntityType::class, [
+                            // 'constraints' => new NotBlank(['message' => 'please choose a city.']),
+                            'placeholder' => 'Choose a city',
+                            // 'disabled' => true,
+                            'class' => City::class,
+                            'choice_label' => 'name',
+                            'query_builder' => function(CityRepository $cityRepository) {
+                                return $cityRepository->createQueryBuilder('c')
+                                ->where('c.country = :countryId')
+                                ->setParameter('countryId', 1)
+                                ->orderBy('c.name', 'ASC');
+                    }]);
                 }
-            ])
+            })
+            // ->add('city', EntityType::class, [
+            //     // 'constraints' => new NotBlank(['message' => 'please choose a city.']),
+            //     'placeholder' => 'Choose a city',
+            //     // 'disabled' => true,
+            //     'class' => City::class,
+            //     'choice_label' => 'name',
+            //     'query_builder' => function(CityRepository $countryRepository) {
+            //         return $countryRepository->createQueryBuilder('c')->orderBy('c.name', 'ASC');
+            //     }
+            // ])
             ->add('message', TextareaType::class, [
                 // 'constraints' => [
                     // new NotBlank(['message' => 'seems like your issue has been resolved :).']),
                     // new Length(['min' => 5]),
                 // ]
             ])
-            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
-                $age = $event->getData()['age'] ?? null;
-                // dd($age);
-
-                if ($age !== null && $age < 18) {
-                    // dd('ici');
-                    $event->getForm()->add('motherName', TextType::class);
-                }
-
+            ->addEventListener(FormEvents::POST_SET_DATA, function () {
+                // dd('test1');
             })
-            // ->addEventListener(FormEvents::POST_SET_DATA, function () {
-            //     dd('test1');
-            // })
             ->getForm()
         ;
 
