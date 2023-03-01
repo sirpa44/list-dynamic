@@ -17,63 +17,47 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(Request $request, CountryRepository $countryRepository): Response
+    public function index(Request $request, CountryRepository $countryRepository, CityRepository $cityRepository): Response
     {
-        $form = $this->createFormBuilder(['country' => $countryRepository->find(1)])
+        $form = $this->createFormBuilder(['country' => $countryRepository->find(4)])
             ->add('name', TextType::class)
             ->add('age', IntegerType::class)
             ->add('price', NumberType::class, [
-                // 'constraints' => new NotBlank(['message' => 'please enter your name.']),
+                'constraints' => new NotBlank(['message' => 'please enter your name.']),
             ])
             ->add('country', EntityType::class, [
-                // 'constraints' => new NotBlank(['message' => 'please choose a country.']),
+                'constraints' => new NotBlank(['message' => 'please choose a country.']),
                 'placeholder' => 'Choose a country',
                 'class' => Country::class,
                 'choice_label' => 'name',
-                'query_builder' => function(CountryRepository $countryRepository) {
+                'query_builder' => function() use($countryRepository) {
                     return $countryRepository->createQueryBuilder('c')->orderBy('c.name', 'ASC');
                 }
             ])
-            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
-                if (null !== $event->getData()['country']) {
-                    $countryId = $event->getData()['country'];
+            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) use($cityRepository) {
+                    $country = $event->getData()['country'] ?? null;
+
                     $event->getForm()->add('city', EntityType::class, [
-                            // 'constraints' => new NotBlank(['message' => 'please choose a city.']),
+                            'constraints' => new NotBlank(['message' => 'please choose a city.']),
                             'placeholder' => 'Choose a city',
-                            // 'disabled' => true,
+                            'disabled' => $country === null,
                             'class' => City::class,
                             'choice_label' => 'name',
-                            'query_builder' => function(CityRepository $cityRepository) {
-                                return $cityRepository->createQueryBuilder('c')
-                                ->where('c.country = :countryId')
-                                ->setParameter('countryId', 1)
-                                ->orderBy('c.name', 'ASC');
-                    }]);
-                }
+                            'choices' => $cityRepository->findByCountry($country)
+                        ]);
             })
-            // ->add('city', EntityType::class, [
-            //     // 'constraints' => new NotBlank(['message' => 'please choose a city.']),
-            //     'placeholder' => 'Choose a city',
-            //     // 'disabled' => true,
-            //     'class' => City::class,
-            //     'choice_label' => 'name',
-            //     'query_builder' => function(CityRepository $countryRepository) {
-            //         return $countryRepository->createQueryBuilder('c')->orderBy('c.name', 'ASC');
-            //     }
-            // ])
+            
             ->add('message', TextareaType::class, [
                 // 'constraints' => [
                     // new NotBlank(['message' => 'seems like your issue has been resolved :).']),
                     // new Length(['min' => 5]),
                 // ]
             ])
-            ->addEventListener(FormEvents::POST_SET_DATA, function () {
-                // dd('test1');
-            })
             ->getForm()
         ;
 
