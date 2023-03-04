@@ -29,12 +29,23 @@ class TicketFormType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+        ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+            $country = $event->getData()['country'] ?? null;
+
+            $event->getForm()->add('city', EntityType::class, [
+                    'constraints' => new NotBlank(['message' => 'please choose a city.']),
+                    'placeholder' => 'Choose a city',
+                    'disabled' => $country === null,
+                    'class' => City::class,
+                    'choice_label' => 'name',
+                    'choices' => $this->cityRepository->findByCountry($country),
+                ]);
+        })
+        ->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event) {
+            $event->setData(['country' => 1]);
+        })
         ->add('name', TextType::class, [
             'constraints' => new NotBlank(['message' => 'please choose a city.']),
-        ])
-        ->add('age', IntegerType::class)
-        ->add('price', NumberType::class, [
-            'constraints' => new NotBlank(['message' => 'please enter your name.']),
         ])
         ->add('country', EntityType::class, [
             'constraints' => new NotBlank(['message' => 'please choose a country.']),
@@ -43,19 +54,8 @@ class TicketFormType extends AbstractType
             'choice_label' => 'name',
             'choices' => $this->countryRepository->findAllOrderByASCName(),
         ])
-        ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
-                $country = $event->getData()['country'] ?? null;
-
-                $event->getForm()->add('city', EntityType::class, [
-                        'constraints' => new NotBlank(['message' => 'please choose a city.']),
-                        'placeholder' => 'Choose a city',
-                        'disabled' => $country === null,
-                        'class' => City::class,
-                        'choice_label' => 'name',
-                        'choices' => $this->cityRepository->findByCountry($country),
-                    ]);
-        })
         ->add('message', TextareaType::class, [
+            'attr' => ['rows' => 5],
             'constraints' => [
                 new NotBlank(['message' => 'seems like your issue has been resolved :).']),
                 new Length(['min' => 5]),
